@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Media Player</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-background"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar glass-panel">
+        <div class="brand">
+            <svg viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+            <h2>ProPlayer</h2>
+        </div>
+
+        <nav class="nav-menu">
+            <input type="file" id="appVideoUpload" accept="video/*" style="opacity: 0; position: absolute; z-index: -1; width: 1px; height: 1px;">
+            
+            <label for="appVideoUpload" class="nav-btn" id="appImportBtn">
+                <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+                Import Video
+            </label>
+            
+            <button class="nav-btn" id="appSettingsBtn">
+                <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+                Settings
+            </button>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="top-header glass-panel">
+            <div class="search-bar">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" placeholder="Search for media...">
+            </div>
+            <div class="user-profile">
+                <span class="greeting">Welcome back, User</span>
+                <div class="avatar">U</div>
+            </div>
+        </header>
+
+        <div class="content-grid">
+            <div class="player-column">
+                
+                <!-- NEW: Video Container Structure -->
+                <div class="video-container no-media paused glow-effect" id="videoContainer">
+                    
+                    <!-- Empty State -->
+                    <div class="empty-state-overlay" id="emptyState">
+                        <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                        <h3>No Media Loaded</h3>
+                        <p>Select a video from your device to begin playback.</p>
+                        <label for="appVideoUpload" class="action-btn primary-btn mt-10">Import File</label>
+                    </div>
+
+                    <!-- Giant Center Play Button for Mobile -->
+                    <div class="center-play-btn" id="centerPlayBtn">
+                        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+
+                    <!-- Video Tag -->
+                    <video id="video" playsinline></video>
+
+                    <!-- NEW: Bottom Controls Toolbar -->
+                    <div class="bottom-controls" id="bottomControls">
+                        
+                        <!-- Track/Progress -->
+                        <div class="progress-wrapper">
+                            <input type="range" id="progressSlider" min="0" max="100" value="0" step="0.1">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+
+                        <!-- Buttons Toolbar -->
+                        <div class="controls-toolbar">
+                            <div class="toolbar-left">
+                                <button class="icon-btn" id="rewindBtn" title="Rewind 10s">
+                                    <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+                                </button>
+                                
+                                <button class="icon-btn pulse-btn" id="playPauseBtn" title="Play/Pause">
+                                    <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    <svg class="pause-icon" style="display: none;" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                                </button>
+                                
+                                <button class="icon-btn" id="forwardBtn" title="Forward 10s">
+                                    <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+                                </button>
+
+                                <div class="volume-group">
+                                    <button class="icon-btn" id="muteBtn">
+                                        <svg class="volume-icon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                                        <svg class="mute-icon" style="display: none;" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                                    </button>
+                                    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="1">
+                                </div>
+                                
+                                <span class="time-display"><span id="currentTime">0:00</span> / <span id="duration">0:00</span></span>
+                            </div>
+
+                            <div class="toolbar-right">
+                                <div class="popup-menu">
+                                    <button class="text-btn" id="speedBtn">1x</button>
+                                    <div class="popup-options" id="speedOptions">
+                                        <div class="popup-option" data-speed="0.5">0.5x</div>
+                                        <div class="popup-option active" data-speed="1">1x</div>
+                                        <div class="popup-option" data-speed="1.5">1.5x</div>
+                                        <div class="popup-option" data-speed="2">2x</div>
+                                    </div>
+                                </div>
+                                <button class="icon-btn" id="fullscreenBtn" title="Fullscreen">
+                                    <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Details -->
+                <div class="video-info glass-panel" id="videoInfoPanel" style="opacity: 0.5; pointer-events: none;">
+                    <h1 id="videoTitleDisplay">Awaiting Import...</h1>
+                    <div class="video-meta">
+                        <span id="videoStatus">Local File • Ready to play</span>
+                        <div class="action-buttons">
+                            <button class="action-btn"><svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg> Like</button>
+                            <button class="action-btn"><svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg> Share</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlist -->
+            <aside class="playlist-column glass-panel">
+                <h3>Up Next</h3>
+                <div class="playlist-items">
+                    <div class="playlist-item active" id="currentPlaylistItem">
+                        <div class="thumb" style="background: var(--surface-hover); display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--text-muted);">
+                            <svg viewBox="0 0 24 24" style="width: 28px; height: 28px; fill: currentColor;"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>
+                        </div>
+                        <div class="info">
+                            <h4 id="playlistTitle">No Media</h4>
+                            <p>Waiting for file</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>App Settings</h3>
+                <button class="close-btn" id="closeSettings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label>App Theme</label>
+                    <select id="themeSelect" class="styled-select">
+                        <option value="dark">Dark Mode</option>
+                        <option value="light">Light Mode</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Video Brightness (<span id="brightVal">100</span>%)</label>
+                    <input type="range" class="slider full-width" id="brightSlider" min="50" max="150" value="100">
+                </div>
+                <div class="setting-group">
+                    <label>Contrast (<span id="contrastVal">100</span>%)</label>
+                    <input type="range" class="slider full-width" id="contrastSlider" min="50" max="150" value="100">
+                </div>
+                <div class="setting-group">
+                    <label>Saturation (<span id="satVal">100</span>%)</label>
+                    <input type="range" class="slider full-width" id="satSlider" min="0" max="200" value="100">
+                </div>
+                <button class="reset-btn" id="resetSettingsBtn">Reset to Default</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
