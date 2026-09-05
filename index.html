@@ -1,1 +1,1547 @@
 
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Media Player - Flagship M3</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        :root[data-theme="dark"] {
+            --bg-base: #0a090e;
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(30, 24, 54, 0.8) 0%, rgba(10, 9, 14, 1) 90.2%);
+            --surface-glass: rgba(22, 20, 30, 0.72);
+            --surface-glass-hover: rgba(38, 35, 52, 0.88);
+            --surface-panel: rgba(18, 16, 25, 0.8);
+            --text-primary: #ffffff;
+            --text-muted: #9f98aa;
+            --accent-primary: #d0bcff;
+            --accent-gradient: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #3b82f6 100%);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(255, 255, 255, 0.16);
+            --shadow-glass: 0 16px 40px rgba(0, 0, 0, 0.45);
+            --shadow-glow: 0 0 24px rgba(168, 85, 247, 0.45);
+        }
+
+        :root[data-theme="light"] {
+            --bg-base: #f8fafc;
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgba(241, 245, 249, 1) 0%, rgba(226, 232, 240, 0.8) 90.2%);
+            --surface-glass: rgba(255, 255, 255, 0.82);
+            --surface-glass-hover: rgba(255, 255, 255, 0.96);
+            --surface-panel: rgba(255, 255, 255, 0.9);
+            --text-primary: #0f172a;
+            --text-muted: #64748b;
+            --accent-primary: #7c3aed;
+            --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #d946ef 50%, #2563eb 100%);
+            --border-glass: rgba(0, 0, 0, 0.06);
+            --border-highlight: rgba(255, 255, 255, 0.6);
+            --shadow-glass: 0 16px 40px rgba(15, 23, 42, 0.08);
+            --shadow-glow: 0 0 24px rgba(124, 58, 237, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            background: var(--bg-base);
+            background-image: var(--bg-gradient);
+            color: var(--text-primary);
+            display: flex;
+            height: 100dvh;
+            overflow: hidden;
+            letter-spacing: -0.01em;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(160, 150, 180, 0.2); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+
+        /* Navigation Rail (Desktop) */
+        .nav-rail {
+            width: 88px;
+            background: var(--surface-glass);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 0;
+            gap: 28px;
+            border-right: 1px solid var(--border-glass);
+            z-index: 50;
+            box-shadow: var(--shadow-glass);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: none;
+            background: none;
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .nav-icon-container {
+            width: 58px;
+            height: 38px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .nav-item:hover .nav-icon-container {
+            background: var(--surface-glass-hover);
+            transform: scale(1.08);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active .nav-icon-container {
+            background: var(--accent-gradient);
+            color: #fff;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .nav-item.active { color: var(--text-primary); }
+        .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
+        .nav-label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+
+        /* App Container */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            position: relative;
+            min-height: 0; /* FIX: Crucial for strict flexbox scrolling */
+        }
+
+        /* Player Section */
+        .player-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 32px 40px;
+            gap: 28px;
+            position: relative;
+            min-height: 0; /* FIX */
+        }
+
+        /* Ambient Backlight Canvas */
+        .ambient-canvas {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: calc(100% - 40px);
+            height: 70vh;
+            filter: blur(80px) saturate(2);
+            opacity: 0.45;
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .video-container-card {
+            position: relative;
+            width: 100%;
+            border-radius: 28px;
+            background: #000;
+            overflow: hidden;
+            box-shadow: var(--shadow-glass);
+            border: 1px solid var(--border-highlight);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            aspect-ratio: 16 / 9;
+            max-height: 72vh;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        .video-container-card video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        video::-webkit-media-controls { display: none !important; }
+
+        /* Empty State */
+        .empty-state {
+            position: absolute;
+            inset: 0;
+            background: var(--surface-glass);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            text-align: center;
+            padding: 32px;
+        }
+
+        .video-container-card:not(.no-media) .empty-state { display: none !important; }
+
+        .empty-state-orb {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--surface-glass-hover);
+            border: 1px solid var(--border-glass);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-glow);
+            animation: pulseGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); box-shadow: var(--shadow-glow); }
+            50% { transform: scale(1.06); box-shadow: 0 0 32px rgba(236, 72, 153, 0.4); }
+        }
+
+        .empty-state-orb svg { width: 44px; height: 44px; fill: var(--accent-primary); }
+        .empty-state h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+        .empty-state p { font-size: 14px; color: var(--text-muted); max-width: 320px; line-height: 1.6; }
+
+        /* Center Play Capsule */
+        .center-play {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 84px;
+            height: 84px;
+            background: rgba(15, 12, 25, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 15;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .center-play:hover {
+            transform: translate(-50%, -50%) scale(1.06);
+            background: var(--accent-gradient);
+            border-color: transparent;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .center-play svg { width: 38px; height: 38px; fill: currentColor; margin-left: 4px; }
+        .video-container-card.paused:not(.no-media) .center-play { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
+
+        /* Double-Tap Seek Ripples */
+        .tap-seek-bubble {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 40%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+            z-index: 14;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        }
+
+        .tap-seek-left { left: 0; border-radius: 28px 0 0 28px; }
+        .tap-seek-right { right: 0; border-radius: 0 28px 28px 0; }
+        .tap-seek-bubble.flash { opacity: 1; }
+
+        /* Video Controls Overlay */
+        .player-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(10, 8, 18, 0.95) 0%, rgba(10, 8, 18, 0.6) 60%, transparent 100%);
+            padding: 48px 24px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 20;
+            transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .video-container-card.no-media .player-controls { display: none; }
+        .video-container-card.idle .player-controls { opacity: 0; pointer-events: none; }
+
+        /* Interactive Timeline */
+        .timeline-box {
+            position: relative;
+            width: 100%;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .timeline-rail {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 99px;
+            position: relative;
+            transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .timeline-box:hover .timeline-rail { height: 10px; }
+
+        .timeline-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 99px;
+            width: 0%;
+            pointer-events: none;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .timeline-progress::after {
+            content: '';
+            position: absolute;
+            right: -7px;
+            top: 50%;
+            transform: translateY(-50%) scale(0);
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.6);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .timeline-box:hover .timeline-progress::after { transform: translateY(-50%) scale(1); }
+
+        .timeline-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            margin: 0;
+            z-index: 5;
+        }
+
+        .timeline-tooltip {
+            position: absolute;
+            bottom: 30px;
+            transform: translateX(-50%);
+            background: rgba(15, 12, 25, 0.9);
+            border: 1px solid var(--border-highlight);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            box-shadow: var(--shadow-glass);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timeline-box:hover .timeline-tooltip { opacity: 1; }
+
+        /* Control Buttons Bar */
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .controls-left, .controls-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .glass-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid transparent;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--border-highlight);
+            transform: translateY(-2px);
+            color: var(--accent-primary);
+        }
+
+        .glass-btn:active { transform: scale(0.92); }
+        .glass-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+        .primary-play-btn {
+            width: 50px;
+            height: 50px;
+            background: var(--accent-gradient);
+            border: none;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-glow);
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .primary-play-btn:hover { transform: scale(1.08); }
+        .primary-play-btn:active { transform: scale(0.94); }
+        .primary-play-btn svg { width: 24px; height: 24px; fill: currentColor; }
+
+        .time-display {
+            color: #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 6px;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.02em;
+        }
+
+        /* Volume Slider Module */
+        .volume-module {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .volume-tray {
+            width: 0px;
+            opacity: 0;
+            overflow: hidden;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+        }
+
+        .volume-module:hover .volume-tray {
+            width: 90px;
+            opacity: 1;
+            padding-left: 10px;
+        }
+
+        .m3-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 99px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .m3-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+            transition: transform 0.15s;
+        }
+
+        .m3-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .speed-badge-btn {
+            font-size: 13px;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-glass);
+            color: #fff;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .speed-badge-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+        /* Info Card Section */
+        .info-card {
+            background: var(--surface-panel);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-radius: 24px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: var(--shadow-glass);
+            border: 1px solid var(--border-glass);
+            z-index: 1;
+        }
+
+        .info-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .video-title {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pill-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 44px;
+            padding: 0 20px;
+            border-radius: 99px;
+            font-size: 14px;
+            font-weight: 700;
+            border: 1px solid var(--border-glass);
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background: var(--surface-glass);
+            color: var(--text-primary);
+        }
+
+        .pill-btn:hover {
+            transform: translateY(-2px);
+            background: var(--surface-glass-hover);
+            border-color: var(--border-highlight);
+        }
+
+        .pill-btn.active {
+            background: var(--accent-gradient);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .pill-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* Watchlist Column */
+        .watchlist-section {
+            width: 400px;
+            background: var(--surface-panel);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--border-glass);
+            box-shadow: var(--shadow-glass);
+            position: relative;
+            z-index: 10;
+            min-height: 0; /* FIX: strict flex boundaries */
+        }
+
+        .watchlist-header {
+            padding: 28px 24px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .watchlist-header h3 {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+
+        .queue-badge {
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-glass);
+            padding: 4px 10px;
+            border-radius: 99px;
+            color: var(--text-muted);
+        }
+
+        .watchlist-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 110px; /* FIX: Large bottom clearance for FAB */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0; /* FIX */
+        }
+
+        /* Watchlist Card */
+        .queue-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background: transparent;
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .queue-card:hover {
+            background: var(--surface-glass);
+            border-color: var(--border-glass);
+            transform: translateX(4px);
+        }
+
+        .queue-card.active {
+            background: var(--surface-glass-hover);
+            border-color: rgba(208, 188, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .queue-card.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 4px;
+            border-radius: 0 4px 4px 0;
+            background: var(--accent-gradient);
+        }
+
+        .thumb-box {
+            width: 86px;
+            height: 52px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-glass);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .thumb-box svg { width: 22px; height: 22px; fill: var(--text-muted); }
+        .queue-card.active .thumb-box svg { fill: var(--accent-primary); }
+
+        /* Dynamic Equalizer Bar on Active Track */
+        .eq-bars {
+            display: none;
+            gap: 3px;
+            align-items: flex-end;
+            height: 16px;
+        }
+
+        .queue-card.active.playing .eq-bars { display: flex; }
+        .queue-card.active.playing .default-icon { display: none; }
+
+        .eq-bar {
+            width: 3px;
+            background: var(--accent-primary);
+            border-radius: 99px;
+            animation: bounce 0.6s ease-in-out infinite alternate;
+        }
+
+        .eq-bar:nth-child(2) { animation-delay: 0.2s; }
+        .eq-bar:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce { 0% { height: 3px; } 100% { height: 16px; } }
+
+        .queue-details {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .queue-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .queue-card.active .queue-title { color: var(--accent-primary); }
+
+        .queue-sub {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .queue-tag {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 10px;
+        }
+
+        /* Floating Import Trigger */
+        .fab-import {
+            position: absolute;
+            bottom: 28px;
+            right: 28px;
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
+            background: var(--accent-gradient);
+            border: none;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-glow);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 20; /* Keep above scrolling list items */
+        }
+
+        .fab-import:hover { transform: scale(1.08) translateY(-4px); }
+        .fab-import:active { transform: scale(0.95); }
+        .fab-import svg { width: 28px; height: 28px; fill: currentColor; }
+
+        /* Settings Modal (M3 Dialog) */
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 4, 10, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-mask.open { opacity: 1; pointer-events: all; }
+
+        .modal-card {
+            background: var(--surface-panel);
+            border: 1px solid var(--border-highlight);
+            width: 92%;
+            max-width: 440px;
+            border-radius: 32px;
+            padding: 32px;
+            box-shadow: var(--shadow-glass);
+            transform: scale(0.92);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-height: 88vh;
+            overflow-y: auto;
+        }
+
+        .modal-mask.open .modal-card { transform: scale(1); }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-head h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+
+        .close-dialog-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid var(--border-glass);
+            background: var(--surface-glass);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.2s;
+        }
+
+        .close-dialog-btn:hover { transform: rotate(90deg); background: var(--surface-glass-hover); }
+        .close-dialog-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+        .setting-block {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 22px;
+        }
+
+        .setting-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .setting-val-chip {
+            color: var(--accent-primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .m3-select-box {
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            outline: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .m3-select-box:hover { border-color: var(--border-highlight); }
+
+        .dialog-cta-btn {
+            background: var(--accent-gradient);
+            color: #fff;
+            border: none;
+            border-radius: 99px;
+            height: 48px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: var(--shadow-glow);
+            transition: 0.25s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .dialog-cta-btn:hover { transform: translateY(-2px); }
+        .dialog-cta-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+        /* Mobile Bottom Nav */
+        .bottom-nav {
+            display: none;
+            justify-content: space-around;
+            align-items: center;
+            background: var(--surface-panel);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            height: 82px;
+            border-top: 1px solid var(--border-glass);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+        }
+
+        .bottom-nav-action {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .bottom-pill {
+            width: 60px;
+            height: 32px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.25s;
+        }
+
+        .bottom-nav-action.active .bottom-pill {
+            background: var(--accent-gradient);
+            color: #fff;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .bottom-nav-action.active { color: var(--text-primary); }
+        .bottom-nav-action svg { width: 22px; height: 22px; fill: currentColor; }
+        .bottom-nav-action span { font-size: 11px; font-weight: 700; }
+
+        /* Responsive Architecture */
+        @media (max-width: 900px) {
+            body { flex-direction: column; }
+            .nav-rail { display: none; }
+            .bottom-nav { display: flex; }
+            
+            .main-content { 
+                flex-direction: column; 
+                overflow-y: auto; 
+                overflow-x: hidden; 
+                padding-bottom: 110px; /* Space for bottom nav + FAB */
+            }
+            
+            .player-section { padding: 0; gap: 0; overflow-y: visible; flex: none; }
+            .ambient-canvas { display: none; }
+            .video-container-card { border-radius: 0; border: none; max-height: 40vh; }
+            .info-card { border-radius: 0; border: none; border-bottom: 1px solid var(--border-glass); padding: 20px; }
+            
+            /* Watchlist becomes part of normal page scroll */
+            .watchlist-section { width: 100%; border: none; flex: none; overflow: visible; box-shadow: none; background: transparent; }
+            .watchlist-body { padding-bottom: 20px; overflow-y: visible; }
+            
+            /* Fix FAB to screen */
+            .fab-import { position: fixed; bottom: 100px; right: 20px; z-index: 100; }
+            .volume-tray { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Glow Canvas -->
+    <canvas id="ambientCanvas" class="ambient-canvas"></canvas>
+
+    <!-- Desktop Nav Rail -->
+    <aside class="nav-rail">
+        <button class="nav-item active" id="railPlayerBtn">
+            <div class="nav-icon-container"><svg viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg></div>
+            <span class="nav-label">Player</span>
+        </button>
+        <button class="nav-item" id="railSettingsBtn">
+            <div class="nav-icon-container"><svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg></div>
+            <span class="nav-label">Settings</span>
+        </button>
+        <label for="fileInput" class="nav-item">
+            <div class="nav-icon-container"><svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg></div>
+            <span class="nav-label">Import</span>
+        </label>
+    </aside>
+
+    <!-- Main Workspace -->
+    <div class="main-content">
+
+        <section class="player-section">
+            <div class="video-container-card no-media paused" id="playerCard">
+                
+                <!-- Empty State Frame -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-orb">
+                        <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                    </div>
+                    <h2>No Video Playing</h2>
+                    <p>Import clips from your device or pick one from the queue to start streaming.</p>
+                </div>
+
+                <!-- Center Play Indicator -->
+                <div class="center-play" id="centerPlayBtn">
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+
+                <!-- Double Tap Seek Bubbles -->
+                <div class="tap-seek-bubble tap-seek-left" id="seekRippleLeft">◀◀ 10s</div>
+                <div class="tap-seek-bubble tap-seek-right" id="seekRippleRight">10s ▶▶</div>
+
+                <!-- Core HTML5 Video Element -->
+                <video id="mainVideo" playsinline></video>
+
+                <!-- Modern Controls Overlay -->
+                <div class="player-controls" id="playerControls">
+                    
+                    <!-- Timeline Capsule -->
+                    <div class="timeline-box" id="timelineArea">
+                        <div class="timeline-rail">
+                            <div class="timeline-progress" id="timelineBar"></div>
+                        </div>
+                        <input type="range" class="timeline-input" id="seekRange" min="0" max="100" value="0" step="0.05">
+                        <div class="timeline-tooltip" id="seekTooltip">0:00</div>
+                    </div>
+
+                    <div class="controls-row">
+                        <div class="controls-left">
+                            <button class="glass-btn" id="rw10Btn" title="Rewind 10s">
+                                <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+                            </button>
+                            
+                            <button class="primary-play-btn" id="playBtn" title="Toggle Play">
+                                <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                <svg class="pause-icon" style="display: none;" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            </button>
+
+                            <button class="glass-btn" id="ff10Btn" title="Forward 10s">
+                                <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+                            </button>
+
+                            <div class="volume-module">
+                                <button class="glass-btn" id="muteBtn">
+                                    <svg class="vol-high" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                                    <svg class="vol-muted" style="display: none;" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                                </button>
+                                <div class="volume-tray">
+                                    <input type="range" class="m3-range" id="inlineVol" min="0" max="1" step="0.02" value="1">
+                                </div>
+                            </div>
+
+                            <div class="time-display">
+                                <span id="timeCurrent">0:00</span> / <span id="timeDuration">0:00</span>
+                            </div>
+                        </div>
+
+                        <div class="controls-right">
+                            <button class="speed-badge-btn" id="speedToggle">1x</button>
+                            <button class="glass-btn" id="fsBtn" title="Fullscreen">
+                                <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Metadata & Actions -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div>
+                        <h1 class="video-title" id="displayTitle">No Video Active</h1>
+                        <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); margin-top: 4px; display: block;" id="displayMeta">Select a track below</span>
+                    </div>
+                    <div class="action-row">
+                        <button class="pill-btn" id="likeActionBtn">
+                            <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+                            <span id="likeText">Favorite</span>
+                        </button>
+                        <button class="pill-btn" id="shareActionBtn">
+                            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                            <span id="shareText">Share</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Watchlist Drawer -->
+        <section class="watchlist-section">
+            <div class="watchlist-header">
+                <h3>Video Queue</h3>
+                <span class="queue-badge" id="queueCounter">0 Items</span>
+            </div>
+
+            <div class="watchlist-body" id="queueList"></div>
+
+            <input type="file" id="fileInput" accept="video/*" multiple style="display: none;">
+            <label for="fileInput" class="fab-import" title="Add Media Files">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </label>
+        </section>
+
+    </div>
+
+    <!-- Mobile Navigation Shell -->
+    <nav class="bottom-nav">
+        <button class="bottom-nav-action active" id="mobPlayerBtn">
+            <div class="bottom-pill"><svg viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg></div>
+            <span>Player</span>
+        </button>
+        <button class="bottom-nav-action" id="mobSettingsBtn">
+            <div class="bottom-pill"><svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg></div>
+            <span>Tweak</span>
+        </button>
+        <label for="fileInput" class="bottom-nav-action">
+            <div class="bottom-pill"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+            <span>Import</span>
+        </label>
+    </nav>
+
+    <!-- Master Settings Modal -->
+    <div class="modal-mask" id="settingsDialog">
+        <div class="modal-card">
+            <div class="modal-head">
+                <h2>Video Calibration</h2>
+                <button class="close-dialog-btn" id="closeSettingsDialog">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-label-row"><span>Interface Theme</span></div>
+                <select id="themeSelect" class="m3-select-box">
+                    <option value="dark">Dark Nebula</option>
+                    <option value="light">Pure Porcelain</option>
+                </select>
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-label-row">
+                    <span>Master Sound</span>
+                    <span class="setting-val-chip" id="labelVol">100%</span>
+                </div>
+                <input type="range" class="m3-range" id="dialogVolSlider" min="0" max="1" step="0.02" value="1">
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-label-row">
+                    <span>Hardware Brightness</span>
+                    <span class="setting-val-chip" id="labelBright">100%</span>
+                </div>
+                <input type="range" class="m3-range" id="brightRange" min="50" max="150" value="100">
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-label-row">
+                    <span>Dynamic Contrast</span>
+                    <span class="setting-val-chip" id="labelContrast">100%</span>
+                </div>
+                <input type="range" class="m3-range" id="contrastRange" min="50" max="150" value="100">
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-label-row">
+                    <span>Color Vibrance / Saturation</span>
+                    <span class="setting-val-chip" id="labelSat">100%</span>
+                </div>
+                <input type="range" class="m3-range" id="satRange" min="0" max="200" value="100">
+            </div>
+
+            <div class="setting-block">
+                <div class="setting-label-row">
+                    <span>Simulated High FPS Sync</span>
+                    <span class="setting-val-chip" id="labelFps">30 FPS</span>
+                </div>
+                <input type="range" class="m3-range" id="fpsRange" min="15" max="60" step="5" value="30">
+            </div>
+
+            <label for="fileInput" class="dialog-cta-btn">
+                <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+                Import Local Videos
+            </label>
+
+            <button class="pill-btn" id="resetCalibrationBtn" style="width:100%; justify-content:center; margin-top:12px;">
+                Reset Calibration
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Handles
+        const video = document.getElementById('mainVideo');
+        const playerCard = document.getElementById('playerCard');
+        const emptyState = document.getElementById('emptyState');
+        const canvas = document.getElementById('ambientCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        const playBtn = document.getElementById('playBtn');
+        const centerPlayBtn = document.getElementById('centerPlayBtn');
+        const playIcon = playBtn.querySelector('.play-icon');
+        const pauseIcon = playBtn.querySelector('.pause-icon');
+        const rw10Btn = document.getElementById('rw10Btn');
+        const ff10Btn = document.getElementById('ff10Btn');
+
+        const seekRange = document.getElementById('seekRange');
+        const timelineBar = document.getElementById('timelineBar');
+        const timelineArea = document.getElementById('timelineArea');
+        const seekTooltip = document.getElementById('seekTooltip');
+        const timeCurrent = document.getElementById('timeCurrent');
+        const timeDuration = document.getElementById('timeDuration');
+
+        const muteBtn = document.getElementById('muteBtn');
+        const volHigh = muteBtn.querySelector('.vol-high');
+        const volMuted = muteBtn.querySelector('.vol-muted');
+        const inlineVol = document.getElementById('inlineVol');
+        const dialogVolSlider = document.getElementById('dialogVolSlider');
+        const labelVol = document.getElementById('labelVol');
+
+        const speedToggle = document.getElementById('speedToggle');
+        const fsBtn = document.getElementById('fsBtn');
+        const displayTitle = document.getElementById('displayTitle');
+        const displayMeta = document.getElementById('displayMeta');
+
+        const fileInput = document.getElementById('fileInput');
+        const queueList = document.getElementById('queueList');
+        const queueCounter = document.getElementById('queueCounter');
+
+        const settingsDialog = document.getElementById('settingsDialog');
+        const railSettingsBtn = document.getElementById('railSettingsBtn');
+        const mobSettingsBtn = document.getElementById('mobSettingsBtn');
+        const closeSettingsDialog = document.getElementById('closeSettingsDialog');
+        const themeSelect = document.getElementById('themeSelect');
+
+        const brightRange = document.getElementById('brightRange');
+        const contrastRange = document.getElementById('contrastRange');
+        const satRange = document.getElementById('satRange');
+        const fpsRange = document.getElementById('fpsRange');
+        const labelBright = document.getElementById('labelBright');
+        const labelContrast = document.getElementById('labelContrast');
+        const labelSat = document.getElementById('labelSat');
+        const labelFps = document.getElementById('labelFps');
+        const resetCalibrationBtn = document.getElementById('resetCalibrationBtn');
+
+        const likeActionBtn = document.getElementById('likeActionBtn');
+        const likeText = document.getElementById('likeText');
+        const shareActionBtn = document.getElementById('shareActionBtn');
+        const shareText = document.getElementById('shareText');
+
+        const seekRippleLeft = document.getElementById('seekRippleLeft');
+        const seekRippleRight = document.getElementById('seekRippleRight');
+
+        // State Store
+        let playlist = [];
+        let currentIndex = -1;
+        let isScrubbing = false;
+        let idleTimer = null;
+        let lastTap = 0;
+
+        // Ambient Backlight Engine
+        function renderAmbientFrame() {
+            if (!video.paused && !video.ended && video.videoWidth) {
+                canvas.width = 64;
+                canvas.height = 36;
+                ctx.drawImage(video, 0, 0, 64, 36);
+            }
+            requestAnimationFrame(renderAmbientFrame);
+        }
+        renderAmbientFrame();
+
+        // Time Formatter
+        function formatSeconds(sec) {
+            if (isNaN(sec) || !isFinite(sec)) return "0:00";
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        // Idle Auto-hide
+        function resetIdleTimer() {
+            playerCard.classList.remove('idle');
+            clearTimeout(idleTimer);
+            if (!video.paused && !playerCard.classList.contains('no-media')) {
+                idleTimer = setTimeout(() => playerCard.classList.add('idle'), 3200);
+            }
+        }
+        ['mousemove', 'touchstart', 'click'].forEach(evt => playerCard.addEventListener(evt, resetIdleTimer));
+
+        // Video State Controls
+        function setPlayState(isPlaying) {
+            if (isPlaying) {
+                playerCard.classList.remove('paused');
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+                updateEqualizers(true);
+                resetIdleTimer();
+            } else {
+                playerCard.classList.add('paused');
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+                updateEqualizers(false);
+                clearTimeout(idleTimer);
+                playerCard.classList.remove('idle');
+            }
+        }
+
+        video.addEventListener('play', () => setPlayState(true));
+        video.addEventListener('pause', () => setPlayState(false));
+
+        function togglePlayback() {
+            if (playerCard.classList.contains('no-media')) return;
+            video.paused ? video.play() : video.pause();
+        }
+
+        playBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePlayback(); });
+        centerPlayBtn.addEventListener('click', togglePlayback);
+
+        // Double-Tap Jump Seek Detection
+        playerCard.addEventListener('click', (e) => {
+            if (e.target.closest('.player-controls') || e.target.closest('.center-play') || playerCard.classList.contains('no-media')) return;
+            const now = Date.now();
+            const rect = playerCard.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+
+            if (now - lastTap < 300) {
+                if (clickX < rect.width / 2) {
+                    video.currentTime = Math.max(0, video.currentTime - 10);
+                    seekRippleLeft.classList.add('flash');
+                    setTimeout(() => seekRippleLeft.classList.remove('flash'), 500);
+                } else {
+                    video.currentTime = Math.min(video.duration, video.currentTime + 10);
+                    seekRippleRight.classList.add('flash');
+                    setTimeout(() => seekRippleRight.classList.remove('flash'), 500);
+                }
+            } else {
+                togglePlayback();
+            }
+            lastTap = now;
+        });
+
+        // 10s Skip Buttons
+        rw10Btn.addEventListener('click', () => video.currentTime = Math.max(0, video.currentTime - 10));
+        ff10Btn.addEventListener('click', () => video.currentTime = Math.min(video.duration, video.currentTime + 10));
+
+        // Timeline Scrubbing
+        video.addEventListener('loadedmetadata', () => {
+            timeDuration.textContent = formatSeconds(video.duration);
+        });
+
+        video.addEventListener('timeupdate', () => {
+            if (!isScrubbing && video.duration) {
+                const percent = (video.currentTime / video.duration) * 100;
+                timelineBar.style.width = `${percent}%`;
+                seekRange.value = percent;
+                timeCurrent.textContent = formatSeconds(video.currentTime);
+            }
+        });
+
+        timelineArea.addEventListener('mousemove', (e) => {
+            if (!video.duration) return;
+            const rect = timelineArea.getBoundingClientRect();
+            const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            seekTooltip.style.left = `${pos * 100}%`;
+            seekTooltip.textContent = formatSeconds(pos * video.duration);
+        });
+
+        seekRange.addEventListener('input', (e) => {
+            isScrubbing = true;
+            timelineBar.style.width = `${e.target.value}%`;
+            timeCurrent.textContent = formatSeconds((e.target.value / 100) * video.duration);
+        });
+
+        seekRange.addEventListener('change', (e) => {
+            video.currentTime = (e.target.value / 100) * video.duration;
+            isScrubbing = false;
+        });
+
+        // Coordinated Audio Engine
+        function applyVolume(vol) {
+            video.volume = vol;
+            video.muted = vol === 0;
+            inlineVol.value = vol;
+            dialogVolSlider.value = vol;
+            labelVol.textContent = `${Math.round(vol * 100)}%`;
+
+            if (video.muted) {
+                volHigh.style.display = 'none';
+                volMuted.style.display = 'block';
+            } else {
+                volHigh.style.display = 'block';
+                volMuted.style.display = 'none';
+            }
+        }
+
+        inlineVol.addEventListener('input', (e) => applyVolume(parseFloat(e.target.value)));
+        dialogVolSlider.addEventListener('input', (e) => applyVolume(parseFloat(e.target.value)));
+
+        muteBtn.addEventListener('click', () => {
+            applyVolume(video.muted ? (inlineVol.value > 0 ? parseFloat(inlineVol.value) : 1) : 0);
+        });
+
+        // Speed Carousel
+        const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
+        speedToggle.addEventListener('click', () => {
+            let nextIndex = (speeds.indexOf(video.playbackRate) + 1) % speeds.length;
+            video.playbackRate = speeds[nextIndex];
+            speedToggle.textContent = `${speeds[nextIndex]}x`;
+            fpsRange.value = speeds[nextIndex] * 30;
+            labelFps.textContent = `${fpsRange.value} FPS`;
+        });
+
+        // Fullscreen
+        fsBtn.addEventListener('click', () => {
+            if (playerCard.classList.contains('no-media')) return;
+            if (!document.fullscreenElement) {
+                playerCard.requestFullscreen?.() || playerCard.webkitRequestFullscreen?.();
+            } else {
+                document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+            }
+        });
+
+        // Watchlist Orchestration
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+
+            files.forEach(file => {
+                playlist.push({
+                    title: file.name.replace(/\.[^/.]+$/, ""),
+                    url: URL.createObjectURL(file),
+                    size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+                });
+            });
+
+            syncQueueUI();
+            if (currentIndex === -1) mountVideo(0);
+
+            settingsDialog.classList.remove('open');
+            e.target.value = '';
+        });
+
+        function syncQueueUI() {
+            queueList.innerHTML = '';
+            queueCounter.textContent = `${playlist.length} Item${playlist.length !== 1 ? 's' : ''}`;
+
+            playlist.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.className = `queue-card ${idx === currentIndex ? 'active' : ''} ${!video.paused ? 'playing' : ''}`;
+                card.innerHTML = `
+                    <div class="thumb-box">
+                        <svg class="default-icon" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>
+                        <div class="eq-bars">
+                            <div class="eq-bar"></div>
+                            <div class="eq-bar"></div>
+                            <div class="eq-bar"></div>
+                        </div>
+                    </div>
+                    <div class="queue-details">
+                        <div class="queue-title">${item.title}</div>
+                        <div class="queue-sub">
+                            <span class="queue-tag">MP4</span>
+                            <span>${item.size}</span>
+                        </div>
+                    </div>
+                `;
+                card.addEventListener('click', () => mountVideo(idx));
+                queueList.appendChild(card);
+            });
+        }
+
+        function updateEqualizers(isPlaying) {
+            const activeCard = queueList.querySelector('.queue-card.active');
+            if (activeCard) {
+                isPlaying ? activeCard.classList.add('playing') : activeCard.classList.remove('playing');
+            }
+        }
+
+        function mountVideo(index) {
+            if (index < 0 || index >= playlist.length) return;
+            currentIndex = index;
+            const target = playlist[currentIndex];
+
+            playerCard.classList.remove('no-media');
+            emptyState.style.display = 'none';
+
+            video.src = target.url;
+            video.load();
+
+            displayTitle.textContent = target.title;
+            displayMeta.textContent = `Local File • ${target.size}`;
+
+            timelineBar.style.width = '0%';
+            seekRange.value = 0;
+
+            syncQueueUI();
+            video.play().catch(console.warn);
+        }
+
+        video.addEventListener('ended', () => {
+            if (currentIndex < playlist.length - 1) {
+                mountVideo(currentIndex + 1);
+            } else {
+                setPlayState(false);
+            }
+        });
+
+        // Favorites & Share Logic
+        likeActionBtn.addEventListener('click', () => {
+            likeActionBtn.classList.toggle('active');
+            likeText.textContent = likeActionBtn.classList.contains('active') ? "Favorited" : "Favorite";
+        });
+
+        shareActionBtn.addEventListener('click', () => {
+            navigator.clipboard?.writeText(window.location.href);
+            shareText.textContent = "Link Copied!";
+            setTimeout(() => shareText.textContent = "Share", 2200);
+        });
+
+        // Settings Dialog Modal Controls
+        const openDialog = () => settingsDialog.classList.add('open');
+        const closeDialog = () => settingsDialog.classList.remove('open');
+
+        railSettingsBtn.addEventListener('click', openDialog);
+        mobSettingsBtn.addEventListener('click', openDialog);
+        closeSettingsDialog.addEventListener('click', closeDialog);
+        settingsDialog.addEventListener('click', (e) => { if (e.target === settingsDialog) closeDialog(); });
+
+        themeSelect.addEventListener('change', (e) => {
+            document.documentElement.setAttribute('data-theme', e.target.value);
+        });
+
+        // Video Pipeline Filters
+        function updateFilters() {
+            labelBright.textContent = `${brightRange.value}%`;
+            labelContrast.textContent = `${contrastRange.value}%`;
+            labelSat.textContent = `${satRange.value}%`;
+            video.style.filter = `brightness(${brightRange.value}%) contrast(${contrastRange.value}%) saturate(${satRange.value}%)`;
+        }
+
+        brightRange.addEventListener('input', updateFilters);
+        contrastRange.addEventListener('input', updateFilters);
+        satRange.addEventListener('input', updateFilters);
+
+        fpsRange.addEventListener('input', (e) => {
+            labelFps.textContent = `${e.target.value} FPS`;
+            const rate = (e.target.value / 30).toFixed(2);
+            video.playbackRate = rate;
+            speedToggle.textContent = `${rate}x`;
+        });
+
+        resetCalibrationBtn.addEventListener('click', () => {
+            brightRange.value = 100;
+            contrastRange.value = 100;
+            satRange.value = 100;
+            fpsRange.value = 30;
+            updateFilters();
+            video.playbackRate = 1;
+            speedToggle.textContent = '1x';
+            labelFps.textContent = '30 FPS';
+            applyVolume(1);
+        });
+    </script>
+</body>
+</html>
