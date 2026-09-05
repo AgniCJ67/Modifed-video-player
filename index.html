@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Media Player - M3</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+        /* Material 3 Color Tokens */
+        :root[data-theme="dark"] {
+            --md-sys-color-background: #141218;
+            --md-sys-color-surface: #211F26;
+            --md-sys-color-surface-container: #2B2930;
+            --md-sys-color-surface-container-high: #36343B;
+            --md-sys-color-on-surface: #E6E0E9;
+            --md-sys-color-on-surface-variant: #CAC4D0;
+            --md-sys-color-primary: #D0BCFF;
+            --md-sys-color-on-primary: #381E72;
+            --md-sys-color-primary-container: #4F378B;
+            --md-sys-color-on-primary-container: #EADDFF;
+            --md-sys-color-secondary: #CCC2DC;
+            --md-sys-color-secondary-container: #4A4458;
+            --md-sys-color-outline: #938F99;
+            --border-radius-large: 24px;
+            --border-radius-medium: 16px;
+            --border-radius-pill: 9999px;
+            --elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+            --elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.30);
+        }
+
+        :root[data-theme="light"] {
+            --md-sys-color-background: #FEF7FF;
+            --md-sys-color-surface: #FEF7FF;
+            --md-sys-color-surface-container: #F3EDF7;
+            --md-sys-color-surface-container-high: #ECE6F0;
+            --md-sys-color-on-surface: #1D1B20;
+            --md-sys-color-on-surface-variant: #49454F;
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-outline: #79747E;
+            --elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.1), 0px 1px 2px 0px rgba(0, 0, 0, 0.2);
+            --elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.1), 0px 1px 3px 0px rgba(0, 0, 0, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background-color: var(--md-sys-color-background); 
+            color: var(--md-sys-color-on-surface); 
+            display: flex; height: 100dvh; overflow: hidden; 
+        }
+
+        /* --- DESKTOP LAYOUT (Navigation Rail) --- */
+        .nav-rail {
+            width: 80px; background: var(--md-sys-color-surface);
+            display: flex; flex-direction: column; align-items: center;
+            padding: 24px 0; gap: 24px; border-right: 1px solid var(--md-sys-color-outline);
+            z-index: 10;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            color: var(--md-sys-color-on-surface-variant); cursor: pointer; border: none; background: none;
+        }
+        .nav-icon-container {
+            width: 56px; height: 32px; border-radius: 16px;
+            display: flex; justify-content: center; align-items: center; transition: 0.2s;
+        }
+        .nav-item:hover .nav-icon-container { background: var(--md-sys-color-surface-container-high); }
+        .nav-item.active .nav-icon-container { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-surface); }
+        .nav-item svg { width: 24px; height: 24px; fill: currentColor; }
+        .nav-label { font-size: 12px; font-weight: 500; text-align: center; }
+
+        /* --- MAIN APP AREA --- */
+        .main-content {
+            flex: 1; display: flex; flex-direction: row; overflow: hidden; background: var(--md-sys-color-background);
+        }
+
+        /* --- PLAYER COLUMN --- */
+        .player-section {
+            flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 24px; gap: 24px;
+        }
+
+        .video-wrapper {
+            position: relative; width: 100%; background: #000;
+            border-radius: var(--border-radius-large); overflow: hidden;
+            box-shadow: var(--elevation-3); display: flex; flex-direction: column; justify-content: center;
+            aspect-ratio: 16 / 9; max-height: 75vh;
+        }
+        
+        .video-wrapper video { width: 100%; height: 100%; object-fit: contain; }
+        video::-webkit-media-controls { display: none !important; }
+
+        /* Empty State */
+        .empty-state {
+            position: absolute; inset: 0; background: var(--md-sys-color-surface-container);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 5; text-align: center; padding: 24px;
+        }
+        .video-wrapper:not(.no-media) .empty-state { display: none !important; } 
+
+        .empty-state svg { width: 48px; height: 48px; fill: var(--md-sys-color-primary); margin-bottom: 16px; }
+        .empty-state h2 { font-size: 24px; margin-bottom: 8px; color: var(--md-sys-color-on-surface); }
+        .empty-state p { font-size: 14px; color: var(--md-sys-color-on-surface-variant); max-width: 300px; }
+
+        /* Center Play */
+        .center-play {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 72px; height: 72px; background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            opacity: 0; pointer-events: none; transition: 0.2s; z-index: 15;
+        }
+        .center-play svg { width: 36px; height: 36px; fill: currentColor; margin-left: 4px; }
+        .video-wrapper.paused:not(.no-media) .center-play { opacity: 1; pointer-events: all; }
+
+        /* M3 Controls Overlay */
+        .player-controls {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+            padding: 40px 16px 16px; display: flex; flex-direction: column; gap: 8px;
+            z-index: 20; transition: opacity 0.3s;
+        }
+        .video-wrapper.no-media .player-controls { display: none; }
+        .video-wrapper.idle .player-controls { opacity: 0; pointer-events: none; }
+
+        /* M3 Progress Bar */
+        .m3-slider-container { position: relative; width: 100%; height: 24px; display: flex; align-items: center; }
+        .m3-slider-track { width: 100%; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; position: relative; }
+        .m3-slider-fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--md-sys-color-primary); border-radius: 3px; width: 0%; pointer-events: none; }
+        .m3-slider-fill::after {
+            content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%);
+            width: 12px; height: 12px; background: var(--md-sys-color-primary); border-radius: 50%;
+        }
+        .m3-slider-input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0; }
+
+        .controls-row { display: flex; justify-content: space-between; align-items: center; }
+        .controls-group { display: flex; align-items: center; gap: 4px; }
+        
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: 50%; background: transparent; border: none;
+            color: #fff; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); }
+        .icon-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        
+        .time-label { color: #fff; font-size: 14px; font-weight: 500; margin: 0 8px; font-variant-numeric: tabular-nums; }
+
+        /* Expandable Volume Control */
+        .volume-group { display: flex; align-items: center; transition: 0.3s ease; }
+        .volume-slider-wrapper { width: 0px; opacity: 0; overflow: hidden; transition: width 0.3s ease, opacity 0.3s ease, padding 0.3s ease; display: flex; align-items: center; }
+        .volume-slider { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.4); border-radius: 2px; outline: none; cursor: pointer; }
+        .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #fff; border-radius: 50%; }
+        .volume-group:hover .volume-slider-wrapper { width: 80px; opacity: 1; padding: 0 8px; }
+
+        /* Metadata Card */
+        .info-card {
+            background: var(--md-sys-color-surface-container); border-radius: var(--border-radius-large);
+            padding: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--elevation-1);
+        }
+        .info-card h1 { font-size: 22px; font-weight: 500; color: var(--md-sys-color-on-surface); word-break: break-all;}
+        
+        .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .m3-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px;
+            border-radius: var(--border-radius-pill); font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: 0.2s;
+        }
+        .m3-btn.tonal { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-surface); }
+        .m3-btn.tonal:hover { filter: brightness(1.1); }
+        .m3-btn.active { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+        .m3-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* --- WATCHLIST COLUMN --- */
+        .watchlist-section {
+            width: 360px; background: var(--md-sys-color-surface-container-high);
+            display: flex; flex-direction: column; border-left: 1px solid var(--md-sys-color-outline);
+        }
+        .watchlist-header {
+            padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--md-sys-color-outline);
+        }
+        .watchlist-header h3 { font-size: 16px; font-weight: 500; }
+        
+        .fab {
+            background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container);
+            border: none; border-radius: 16px; width: 56px; height: 56px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            box-shadow: var(--elevation-3); transition: 0.2s; position: absolute; bottom: 24px; right: 24px; z-index: 10;
+        }
+        .fab:hover { box-shadow: var(--elevation-1); filter: brightness(1.1); }
+        .fab svg { width: 24px; height: 24px; fill: currentColor; }
+
+        .watchlist-body {
+            flex: 1; overflow-y: auto; padding: 12px; position: relative;
+        }
+        
+        .list-item {
+            display: flex; align-items: center; gap: 16px; padding: 12px;
+            border-radius: var(--border-radius-medium); cursor: pointer; transition: 0.2s;
+            background: transparent; color: var(--md-sys-color-on-surface);
+        }
+        .list-item:hover { background: var(--md-sys-color-surface-container); }
+        .list-item.playing { background: var(--md-sys-color-secondary-container); }
+        
+        .item-thumb {
+            width: 80px; height: 48px; border-radius: 8px; background: var(--md-sys-color-surface);
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        .item-thumb svg { width: 24px; height: 24px; fill: var(--md-sys-color-primary); }
+        .item-info { flex: 1; overflow: hidden; }
+        .item-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-meta { font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 4px; }
+
+        /* Settings Modal */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100;
+            display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.2s;
+        }
+        .modal.active { opacity: 1; pointer-events: all; }
+        .modal-surface {
+            background: var(--md-sys-color-surface-container-high); width: 90%; max-width: 400px;
+            border-radius: var(--border-radius-large); padding: 24px; box-shadow: var(--elevation-3);
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .modal-header h2 { font-size: 20px; font-weight: 500; }
+        .close-btn { background: none; border: none; color: var(--md-sys-color-on-surface); cursor: pointer; }
+        .close-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        
+        .setting-row { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .setting-row label { font-size: 14px; font-weight: 500; display: flex; justify-content: space-between;}
+        .m3-select {
+            background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface);
+            border: 1px solid var(--md-sys-color-outline); padding: 12px; border-radius: 8px; outline: none; width: 100%;
+        }
+
+        .m3-slider-input-settings { width: 100%; -webkit-appearance: none; height: 6px; background: var(--md-sys-color-outline); border-radius: 3px; outline: none; }
+        .m3-slider-input-settings::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--md-sys-color-primary); border-radius: 50%; cursor: pointer; }
+
+        /* --- MOBILE LAYOUT OVERRIDES --- */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .nav-rail { display: none; } 
+            .main-content { flex-direction: column; }
+            
+            .player-section { padding: 0; gap: 0; flex: none; }
+            .video-wrapper { border-radius: 0; max-height: 40vh; }
+            .info-card { border-radius: 0; padding: 16px; box-shadow: none; border-bottom: 1px solid var(--md-sys-color-outline); }
+            
+            .watchlist-section { width: 100%; flex: 1; border-left: none; }
+            .fab { bottom: 96px; right: 16px; }
+            .volume-slider-wrapper { display: none; }
+
+            .bottom-nav {
+                display: flex; justify-content: space-around; align-items: center;
+                background: var(--md-sys-color-surface-container); height: 80px; padding: 0 8px;
+                border-top: 1px solid var(--md-sys-color-outline); z-index: 50;
+            }
+            .bottom-nav-item {
+                flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+                color: var(--md-sys-color-on-surface-variant); cursor: pointer; background: none; border: none;
+            }
+            .bottom-nav-item .icon-pill {
+                width: 64px; height: 32px; border-radius: 16px; display: flex; justify-content: center; align-items: center;
+            }
+            .bottom-nav-item.active .icon-pill { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-surface); }
+            .bottom-nav-item svg { width: 24px; height: 24px; fill: currentColor; }
+            .bottom-nav-item span { font-size: 12px; font-weight: 500; }
+        }
+
+        @media (min-width: 769px) {
+            .bottom-nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Desktop Navigation Rail -->
+    <aside class="nav-rail">
+        <button class="nav-item active">
+            <div class="nav-icon-container"><svg viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg></div>
+            <span class="nav-label">Player</span>
+        </button>
+        <!-- REORDERED: Settings is now second -->
+        <button class="nav-item" id="navSettingsBtn">
+            <div class="nav-icon-container"><svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg></div>
+            <span class="nav-label">Settings</span>
+        </button>
+        <!-- REORDERED: Import is now Behind/After Settings -->
+        <label for="multiUpload" class="nav-item">
+            <div class="nav-icon-container"><svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg></div>
+            <span class="nav-label">Import<br>Video</span>
+        </label>
+    </aside>
+
+    <div class="main-content">
+        
+        <!-- Player Area -->
+        <section class="player-section">
+            <div class="video-wrapper no-media paused" id="videoWrapper">
+                
+                <div class="empty-state" id="emptyState">
+                    <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>
+                    <h2>Watchlist Empty</h2>
+                    <p>Add videos to your watchlist or use the settings menu to import media.</p>
+                </div>
+
+                <div class="center-play" id="centerPlayBtn">
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+
+                <video id="video" playsinline></video>
+
+                <!-- Controls -->
+                <div class="player-controls" id="playerControls">
+                    <div class="m3-slider-container">
+                        <div class="m3-slider-track">
+                            <div class="m3-slider-fill" id="progressFill"></div>
+                        </div>
+                        <input type="range" class="m3-slider-input" id="progressSlider" min="0" max="100" value="0" step="0.1">
+                    </div>
+
+                    <div class="controls-row">
+                        <div class="controls-group">
+                            <button class="icon-btn" id="rewindBtn"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg></button>
+                            <button class="icon-btn" id="playPauseBtn">
+                                <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                <svg class="pause-icon" style="display: none;" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            </button>
+                            <button class="icon-btn" id="forwardBtn"><svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></button>
+                            
+                            <!-- Expandable Volume Control -->
+                            <div class="volume-group">
+                                <button class="icon-btn" id="muteBtn">
+                                    <svg class="volume-icon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                                    <svg class="mute-icon" style="display: none;" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                                </button>
+                                <div class="volume-slider-wrapper">
+                                    <input type="range" class="volume-slider" id="inlineVolumeSlider" min="0" max="1" step="0.05" value="1">
+                                </div>
+                            </div>
+
+                            <span class="time-label"><span id="currentTime">0:00</span> / <span id="duration">0:00</span></span>
+                        </div>
+                        <div class="controls-group">
+                            <button class="icon-btn" id="speedBtn" title="Speed" style="font-size: 14px; font-weight: 600;">1x</button>
+                            <button class="icon-btn" id="fullscreenBtn"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meta Data -->
+            <div class="info-card">
+                <h1 id="videoTitle">No Video Selected</h1>
+                <div class="action-row">
+                    <button class="m3-btn tonal" id="likeBtn">
+                        <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg> 
+                        <span id="likeText">Like</span>
+                    </button>
+                    <button class="m3-btn tonal" id="shareBtn">
+                        <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg> 
+                        <span id="shareText">Share</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Watchlist Sidebar -->
+        <section class="watchlist-section">
+            <div class="watchlist-header">
+                <h3>Watchlist</h3>
+                <span id="watchlistCount" style="font-size: 14px; color: var(--md-sys-color-on-surface-variant);">0 items</span>
+            </div>
+            
+            <div class="watchlist-body" id="watchlistContainer">
+                <!-- Video Items Inject Here -->
+                <input type="file" id="multiUpload" accept="video/*" multiple style="display: none;">
+                <label for="multiUpload" class="fab" title="Add Videos">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                </label>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="bottom-nav-item active">
+            <div class="icon-pill"><svg viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg></div>
+            <span>Player</span>
+        </button>
+        <!-- REORDERED: Settings is now second -->
+        <button class="bottom-nav-item" id="mobSettingsBtn">
+            <div class="icon-pill"><svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg></div>
+            <span>Settings</span>
+        </button>
+        <!-- REORDERED: Import is now Behind/After Settings -->
+        <label for="multiUpload" class="bottom-nav-item">
+            <div class="icon-pill"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+            <span>Add Media</span>
+        </label>
+    </nav>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-surface">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" id="closeSettings"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+            </div>
+            
+            <div class="setting-row">
+                <label>App Theme</label>
+                <select id="themeSelect" class="m3-select">
+                    <option value="dark">Dark Mode</option>
+                    <option value="light">Light Mode</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <label>Master Volume <span>(<span id="volVal">100</span>%)</span></label>
+                <input type="range" class="m3-slider-input-settings" id="settingsVolumeSlider" min="0" max="1" step="0.05" value="1">
+            </div>
+            <div class="setting-row">
+                <label>Brightness <span>(<span id="brightVal">100</span>%)</span></label>
+                <input type="range" class="m3-slider-input-settings" id="brightSlider" min="50" max="150" value="100">
+            </div>
+            <div class="setting-row">
+                <label>Contrast <span>(<span id="contrastVal">100</span>%)</span></label>
+                <input type="range" class="m3-slider-input-settings" id="contrastSlider" min="50" max="150" value="100">
+            </div>
+            <div class="setting-row">
+                <label>Saturation <span>(<span id="satVal">100</span>%)</span></label>
+                <input type="range" class="m3-slider-input-settings" id="satSlider" min="0" max="200" value="100">
+            </div>
+            <!-- DEDICATED FPS CONTROL -->
+            <div class="setting-row">
+                <label>Simulated FPS Control <span>(<span id="fpsVal">30</span> FPS)</span></label>
+                <input type="range" class="m3-slider-input-settings" id="fpsSlider" min="15" max="60" step="5" value="30">
+            </div>
+            
+            <!-- IMPORT BUTTON TUCKED BEHIND SETTINGS -->
+            <label for="multiUpload" class="m3-btn" style="background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); justify-content: center; margin-top: 12px; height: 48px;">
+                <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+                Import Video Files
+            </label>
+
+            <button class="m3-btn" id="resetSettingsBtn" style="background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); width: 100%; justify-content: center; margin-top: 12px; height: 48px;">
+                Reset to Default
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Elements ---
+        const video = document.getElementById('video');
+        const videoWrapper = document.getElementById('videoWrapper');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const centerPlayBtn = document.getElementById('centerPlayBtn');
+        const rewindBtn = document.getElementById('rewindBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const playIcon = document.querySelector('.play-icon');
+        const pauseIcon = document.querySelector('.pause-icon');
+        
+        const progressSlider = document.getElementById('progressSlider');
+        const progressFill = document.getElementById('progressFill');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationEl = document.getElementById('duration');
+        
+        const muteBtn = document.getElementById('muteBtn');
+        const inlineVolumeSlider = document.getElementById('inlineVolumeSlider');
+        const settingsVolumeSlider = document.getElementById('settingsVolumeSlider');
+        const volVal = document.getElementById('volVal');
+        const volumeIcon = document.querySelector('.volume-icon');
+        const muteIcon = document.querySelector('.mute-icon');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const speedBtn = document.getElementById('speedBtn');
+        
+        const videoTitle = document.getElementById('videoTitle');
+        const multiUpload = document.getElementById('multiUpload');
+        const watchlistContainer = document.getElementById('watchlistContainer');
+        const watchlistCount = document.getElementById('watchlistCount');
+        
+        const settingsModal = document.getElementById('settingsModal');
+        const navSettingsBtn = document.getElementById('navSettingsBtn');
+        const mobSettingsBtn = document.getElementById('mobSettingsBtn');
+        const closeSettings = document.getElementById('closeSettings');
+        const themeSelect = document.getElementById('themeSelect');
+
+        // Settings Elements
+        const brightSlider = document.getElementById('brightSlider');
+        const contrastSlider = document.getElementById('contrastSlider');
+        const satSlider = document.getElementById('satSlider');
+        const fpsSlider = document.getElementById('fpsSlider');
+        const brightVal = document.getElementById('brightVal');
+        const contrastVal = document.getElementById('contrastVal');
+        const satVal = document.getElementById('satVal');
+        const fpsVal = document.getElementById('fpsVal');
+        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+
+        // Action Elements
+        const likeBtn = document.getElementById('likeBtn');
+        const likeText = document.getElementById('likeText');
+        const shareBtn = document.getElementById('shareBtn');
+        const shareText = document.getElementById('shareText');
+
+        // --- Action Buttons Logic (Like/Share) ---
+        likeBtn.addEventListener('click', () => {
+            likeBtn.classList.toggle('active');
+            if(likeBtn.classList.contains('active')){
+                likeText.textContent = "Liked";
+            } else {
+                likeText.textContent = "Like";
+            }
+        });
+
+        shareBtn.addEventListener('click', () => {
+            const originalText = shareText.textContent;
+            shareText.textContent = "Copied!";
+            setTimeout(() => { shareText.textContent = originalText; }, 2000);
+        });
+
+        // --- Watchlist State ---
+        let playlist = [];
+        let currentIndex = -1;
+        let isScrubbing = false;
+        let idleTimer;
+
+        // --- Watchlist Logic ---
+        multiUpload.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            files.forEach(file => {
+                playlist.push({
+                    name: file.name.replace(/\.[^/.]+$/, ""),
+                    url: URL.createObjectURL(file),
+                    file: file
+                });
+            });
+
+            renderWatchlist();
+            
+            if (currentIndex === -1) {
+                playVideo(0);
+            }
+            
+            // Close settings modal if import was triggered from inside settings
+            settingsModal.classList.remove('active');
+            e.target.value = ''; 
+        });
+
+        function renderWatchlist() {
+            const existingItems = watchlistContainer.querySelectorAll('.list-item');
+            existingItems.forEach(item => item.remove());
+
+            watchlistCount.textContent = `${playlist.length} items`;
+
+            playlist.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = `list-item ${index === currentIndex ? 'playing' : ''}`;
+                div.innerHTML = `
+                    <div class="item-thumb">
+                        ${index === currentIndex ? 
+                        `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>` : 
+                        `<svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>`}
+                    </div>
+                    <div class="item-info">
+                        <div class="item-title">${item.name}</div>
+                        <div class="item-meta">Local File</div>
+                    </div>
+                `;
+                div.addEventListener('click', () => playVideo(index));
+                watchlistContainer.appendChild(div);
+            });
+        }
+
+        function playVideo(index) {
+            if (index < 0 || index >= playlist.length) return;
+            
+            currentIndex = index;
+            const media = playlist[currentIndex];
+            
+            videoWrapper.classList.remove('no-media');
+            video.src = media.url;
+            video.load(); 
+            videoTitle.textContent = media.name;
+            
+            renderWatchlist(); 
+            
+            progressFill.style.width = `0%`;
+            progressSlider.value = 0;
+            
+            video.play().catch(e => console.log("Autoplay prevented:", e));
+        }
+
+        // Auto-play next video
+        video.addEventListener('ended', () => {
+            if (currentIndex < playlist.length - 1) {
+                playVideo(currentIndex + 1);
+            } else {
+                videoWrapper.classList.add('paused');
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+            }
+        });
+
+        // --- Video Player UI Logic ---
+        function resetIdleTimer() {
+            videoWrapper.classList.remove('idle');
+            clearTimeout(idleTimer);
+            if (!video.paused && !videoWrapper.classList.contains('no-media')) {
+                idleTimer = setTimeout(() => { videoWrapper.classList.add('idle'); }, 3000);
+            }
+        }
+        ['mousemove', 'touchstart', 'click'].forEach(e => videoWrapper.addEventListener(e, resetIdleTimer));
+
+        video.addEventListener('play', () => {
+            videoWrapper.classList.remove('paused');
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+            resetIdleTimer();
+        });
+
+        video.addEventListener('pause', () => {
+            videoWrapper.classList.add('paused');
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            clearTimeout(idleTimer);
+            videoWrapper.classList.remove('idle');
+        });
+
+        function togglePlay() {
+            if (videoWrapper.classList.contains('no-media')) return;
+            video.paused ? video.play() : video.pause();
+        }
+        playPauseBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); });
+        centerPlayBtn.addEventListener('click', togglePlay);
+        video.addEventListener('click', togglePlay);
+
+        rewindBtn.addEventListener('click', () => video.currentTime = Math.max(0, video.currentTime - 10));
+        forwardBtn.addEventListener('click', () => video.currentTime = Math.min(video.duration, video.currentTime + 10));
+
+        function formatTime(sec) {
+            if (isNaN(sec)) return "0:00";
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        video.addEventListener('loadedmetadata', () => durationEl.textContent = formatTime(video.duration));
+        video.addEventListener('timeupdate', () => {
+            if (!isScrubbing) {
+                const p = (video.currentTime / video.duration) * 100;
+                progressFill.style.width = `${p}%`;
+                progressSlider.value = p;
+                currentTimeEl.textContent = formatTime(video.currentTime);
+            }
+        });
+
+        progressSlider.addEventListener('input', (e) => {
+            isScrubbing = true;
+            progressFill.style.width = `${e.target.value}%`;
+            currentTimeEl.textContent = formatTime((e.target.value / 100) * video.duration);
+        });
+        progressSlider.addEventListener('change', (e) => {
+            video.currentTime = (e.target.value / 100) * video.duration;
+            isScrubbing = false;
+        });
+
+        // --- Dual Volume Sync Logic ---
+        function syncVolume(val) {
+            video.volume = val;
+            video.muted = val === "0" || val === 0;
+            inlineVolumeSlider.value = val;
+            settingsVolumeSlider.value = val;
+            volVal.textContent = Math.round(val * 100);
+            volumeIcon.style.display = video.muted ? 'none' : 'block';
+            muteIcon.style.display = video.muted ? 'block' : 'none';
+        }
+
+        inlineVolumeSlider.addEventListener('input', (e) => syncVolume(e.target.value));
+        settingsVolumeSlider.addEventListener('input', (e) => syncVolume(e.target.value));
+
+        muteBtn.addEventListener('click', () => {
+            const newVal = video.muted ? (inlineVolumeSlider.value > 0 ? inlineVolumeSlider.value : 1) : 0;
+            syncVolume(newVal);
+        });
+
+        // True FPS / Speed Toggle Array (15fps -> 60fps)
+        const speeds = [1, 1.25, 1.5, 2, 0.5]; 
+        let speedIdx = 0;
+        speedBtn.addEventListener('click', () => {
+            speedIdx = (speedIdx + 1) % speeds.length;
+            video.playbackRate = speeds[speedIdx];
+            speedBtn.textContent = `${speeds[speedIdx]}x`;
+            
+            // Sync FPS Slider (assumes base video is 30 FPS)
+            fpsSlider.value = speeds[speedIdx] * 30;
+            fpsVal.textContent = speeds[speedIdx] * 30;
+        });
+
+        fullscreenBtn.addEventListener('click', () => {
+            if (videoWrapper.classList.contains('no-media')) return;
+            if (!document.fullscreenElement) {
+                if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
+                else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        });
+
+        // --- Settings Modal ---
+        const openSettings = () => settingsModal.classList.add('active');
+        navSettingsBtn.addEventListener('click', openSettings);
+        mobSettingsBtn.addEventListener('click', openSettings);
+        
+        closeSettings.addEventListener('click', () => settingsModal.classList.remove('active'));
+        settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.classList.remove('active'); });
+
+        themeSelect.addEventListener('change', (e) => {
+            document.documentElement.setAttribute('data-theme', e.target.value);
+        });
+
+        // Settings Visual Filters Logic
+        function applyFilters() {
+            brightVal.textContent = brightSlider.value;
+            contrastVal.textContent = contrastSlider.value;
+            satVal.textContent = satSlider.value;
+            video.style.filter = `brightness(${brightSlider.value}%) contrast(${contrastSlider.value}%) saturate(${satSlider.value}%)`;
+        }
+        brightSlider.addEventListener('input', applyFilters);
+        contrastSlider.addEventListener('input', applyFilters);
+        satSlider.addEventListener('input', applyFilters);
+
+        // Dedicated FPS Slider Logic
+        fpsSlider.addEventListener('input', (e) => {
+            fpsVal.textContent = e.target.value;
+            
+            // Calculate playback speed based on target FPS (assuming base 30fps)
+            const rate = (e.target.value / 30).toFixed(2);
+            video.playbackRate = rate;
+            speedBtn.textContent = `${rate}x`;
+            
+            // Try to match the cycle index roughly
+            speedIdx = speeds.indexOf(parseFloat(rate));
+            if(speedIdx === -1) speedIdx = 0;
+        });
+
+        resetSettingsBtn.addEventListener('click', () => {
+            brightSlider.value = 100;
+            contrastSlider.value = 100;
+            satSlider.value = 100;
+            fpsSlider.value = 30;
+            themeSelect.value = "dark";
+            document.documentElement.setAttribute('data-theme', 'dark');
+            applyFilters();
+            
+            video.playbackRate = 1;
+            speedBtn.textContent = `1x`;
+            fpsVal.textContent = `30`;
+            speedIdx = 0;
+            
+            syncVolume(1);
+        });
+
+    </script>
+</body>
+</html>
